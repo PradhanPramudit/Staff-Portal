@@ -216,10 +216,14 @@ export const AdvanceTable: React.FC<AdvanceTableProps> = ({
                             {openActionId === adv.id && (
                               <>
                                 <div
-                                  className="fixed inset-0 z-20"
+                                  className="fixed inset-0 z-20 pointer-events-none"
                                   onClick={() => setOpenActionId(null)}
                                 />
-                                <div className="absolute right-0 mt-1 w-36 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-pop py-1 z-30 text-xs text-left">
+                                <div className={`absolute right-0 w-36 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-pop py-1 z-30 text-xs text-left ${
+                                  filteredAdvances.indexOf(adv) >= filteredAdvances.length - 2
+                                    ? 'bottom-full mb-1'
+                                    : 'mt-1'
+                                }`}>
                                   {adv.status === 'pending' && (
                                     <>
                                       <button

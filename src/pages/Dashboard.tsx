@@ -149,19 +149,39 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
     return rows.reduce((sum, r) => sum + r.netPay, 0);
   }, [settings, activeEmployees, curMonth, todayAttendance, advances]);
 
-  // Quick action: quick mark single employee as present
-  const handleQuickMarkPresent = async (employeeId: string) => {
+  // Quick action: quick mark single employee
+  const handleQuickMark = async (employeeId: string, status: 'present' | 'half_day' | 'absent') => {
     try {
       await setAttendance({
         employeeId,
         date: today,
-        status: 'present',
+        status,
       });
-      success('Marked present');
+      success(`Marked ${status.replace('_', ' ')}`);
       await loadData();
     } catch (err) {
       console.error(err);
       error('Failed to mark attendance');
+    }
+  };
+
+  // Batch mark all unmarked as present
+  const handleMarkAllPresent = async () => {
+    try {
+      await Promise.all(
+        unmarkedStaff.map((emp) =>
+          setAttendance({
+            employeeId: emp.id,
+            date: today,
+            status: 'present',
+          })
+        )
+      );
+      success(`Marked ${unmarkedStaff.length} staff present`);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      error('Failed to mark all present');
     }
   };
 
@@ -200,7 +220,7 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
         {isSaturday && (
           <div className="p-3.5 rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" aria-hidden="true" />
               <span>
                 Today is Saturday (Regular Weekly Off in Nepal). Marking attendance is optional today.
               </span>
@@ -209,6 +229,7 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
               variant="outline"
               size="sm"
               onClick={() => navigate('/attendance')}
+              aria-label="Open attendance sheet for today"
             >
               Open Sheet
             </Button>
@@ -221,15 +242,20 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Active Staff */}
-            <div
+            <button
+              type="button"
               onClick={() => navigate('/employees')}
-              className="p-4 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors cursor-pointer group"
+              className="relative p-4 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700 hover:-translate-y-1 hover:shadow-md active:border-zinc-400 dark:active:border-zinc-600 active:translate-y-0 transition-all group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-50 dark:focus-visible:ring-accent-400 dark:focus-visible:ring-offset-zinc-950"
+              aria-label="View active staff and employees"
             >
+              {activeStaffCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-sm" aria-hidden="true" />
+              )}
               <div className="flex items-center justify-between text-zinc-500 mb-1">
                 <span className="text-xs font-medium uppercase tracking-wider">
                   Active Staff
                 </span>
-                <Users className="w-4 h-4 text-accent-600 group-hover:scale-105 transition-transform" />
+                <Users className="w-4 h-4 text-accent-600 group-hover:scale-105 transition-transform" aria-hidden="true" />
               </div>
               <div className="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tabular-nums">
                 {activeStaffCount}
@@ -237,45 +263,56 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
               <div className="flex items-center justify-between text-[11px] text-zinc-500 mt-2">
                 <span>{employees.length - activeStaffCount} inactive</span>
                 <span className="text-accent-600 group-hover:underline flex items-center gap-0.5">
-                  View staff <ArrowRight className="w-3 h-3" />
+                  View staff <ArrowRight className="w-3 h-3" aria-hidden="true" />
                 </span>
               </div>
-            </div>
+            </button>
 
             {/* Card 2: Today's Attendance Rate */}
-            <div
+            <button
+              type="button"
               onClick={() => navigate('/attendance')}
-              className="p-4 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors cursor-pointer group"
+              className="p-4 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700 hover:-translate-y-1 hover:shadow-md active:border-zinc-400 dark:active:border-zinc-600 active:translate-y-0 transition-all group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-50 dark:focus-visible:ring-accent-400 dark:focus-visible:ring-offset-zinc-950"
+              aria-label="View today's attendance rate and mark attendance"
             >
               <div className="flex items-center justify-between text-zinc-500 mb-1">
                 <span className="text-xs font-medium uppercase tracking-wider">
                   Today's Attendance
                 </span>
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 group-hover:scale-105 transition-transform" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 group-hover:scale-105 transition-transform" aria-hidden="true" />
               </div>
               <div className="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tabular-nums">
                 {attendanceRate}%
               </div>
-              <div className="flex items-center justify-between text-[11px] text-zinc-500 mt-2">
+              <div className="mt-2 mb-1.5 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${attendanceRate}%` }}
+                  aria-hidden="true"
+                />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-zinc-500">
                 <span>
                   {presentCount} of {activeStaffCount} present
                 </span>
                 <span className="text-emerald-600 group-hover:underline flex items-center gap-0.5">
-                  Mark sheet <ArrowRight className="w-3 h-3" />
+                  Mark sheet <ArrowRight className="w-3 h-3" aria-hidden="true" />
                 </span>
               </div>
-            </div>
+            </button>
 
             {/* Card 3: Advances Given This Month */}
-            <div
+            <button
+              type="button"
               onClick={() => navigate('/advances')}
-              className="p-4 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors cursor-pointer group"
+              className="p-4 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700 hover:-translate-y-1 hover:shadow-md active:border-zinc-400 dark:active:border-zinc-600 active:translate-y-0 transition-all group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-50 dark:focus-visible:ring-accent-400 dark:focus-visible:ring-offset-zinc-950"
+              aria-label="View salary advances given this month"
             >
               <div className="flex items-center justify-between text-zinc-500 mb-1">
                 <span className="text-xs font-medium uppercase tracking-wider">
                   Advances This Month
                 </span>
-                <HandCoins className="w-4 h-4 text-amber-500 group-hover:scale-105 transition-transform" />
+                <HandCoins className="w-4 h-4 text-amber-500 group-hover:scale-105 transition-transform" aria-hidden="true" />
               </div>
               <div className="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tabular-nums">
                 {formatPaisa(advancesThisMonth, {
@@ -286,21 +323,23 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
               <div className="flex items-center justify-between text-[11px] text-zinc-500 mt-2">
                 <span>Disbursed in {curMonth}</span>
                 <span className="text-amber-600 group-hover:underline flex items-center gap-0.5">
-                  Advances <ArrowRight className="w-3 h-3" />
+                  Advances <ArrowRight className="w-3 h-3" aria-hidden="true" />
                 </span>
               </div>
-            </div>
+            </button>
 
             {/* Card 4: Estimated Payroll This Month */}
-            <div
+            <button
+              type="button"
               onClick={() => navigate('/payroll')}
-              className="p-4 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors cursor-pointer group"
+              className="p-4 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700 hover:-translate-y-1 hover:shadow-md active:border-zinc-400 dark:active:border-zinc-600 active:translate-y-0 transition-all group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-50 dark:focus-visible:ring-accent-400 dark:focus-visible:ring-offset-zinc-950"
+              aria-label="Review estimated payroll payout for this month"
             >
               <div className="flex items-center justify-between text-zinc-500 mb-1">
                 <span className="text-xs font-medium uppercase tracking-wider">
                   Est. Payroll Payout
                 </span>
-                <Receipt className="w-4 h-4 text-accent-700 dark:text-accent-400 group-hover:scale-105 transition-transform" />
+                <Receipt className="w-4 h-4 text-accent-700 dark:text-accent-400 group-hover:scale-105 transition-transform" aria-hidden="true" />
               </div>
               <div className="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tabular-nums">
                 {formatPaisa(estimatedPayroll, {
@@ -311,10 +350,10 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
               <div className="flex items-center justify-between text-[11px] text-zinc-500 mt-2">
                 <span>Estimated net pay</span>
                 <span className="text-accent-600 group-hover:underline flex items-center gap-0.5">
-                  Review <ArrowRight className="w-3 h-3" />
+                  Review <ArrowRight className="w-3 h-3" aria-hidden="true" />
                 </span>
               </div>
-            </div>
+            </button>
           </div>
         )}
 
@@ -325,7 +364,7 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-zinc-400" />
+                  <UserCheck className="w-4 h-4 text-zinc-400" aria-hidden="true" />
                   <span>Today's Marked Attendance ({markedStaff.length})</span>
                 </h3>
                 <p className="text-xs text-zinc-500 mt-0.5">
@@ -337,6 +376,7 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => navigate('/attendance')}
+                aria-label="Open full attendance sheet"
               >
                 Open Full Sheet
               </Button>
@@ -354,10 +394,12 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
             ) : (
               <div className="divide-y divide-zinc-100 dark:divide-zinc-800 text-xs">
                 {markedStaff.map(({ employee: emp, record }) => (
-                  <div
+                  <button
                     key={emp.id}
+                    type="button"
                     onClick={() => navigate(`/employees/${emp.id}`)}
-                    className="py-2.5 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/40 px-2 rounded -mx-2 transition-colors cursor-pointer"
+                    className="py-2.5 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/40 active:bg-zinc-100 dark:active:bg-zinc-800 px-2 rounded -mx-2 transition-colors w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-600 dark:focus-visible:ring-accent-400"
+                    aria-label={`View ${emp.fullName}'s details`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="w-6 h-6 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold text-[11px] flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-700">
@@ -393,7 +435,7 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
                         {record.status.replace('_', ' ')}
                       </span>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -404,7 +446,7 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-500" />
+                  <AlertCircle className="w-4 h-4 text-amber-500" aria-hidden="true" />
                   <span>Not Marked Yet ({unmarkedStaff.length})</span>
                 </h3>
               </div>
@@ -414,36 +456,67 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
 
               {unmarkedStaff.length === 0 ? (
                 <div className="p-4 text-center text-xs text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-800 rounded bg-zinc-50/50 dark:bg-zinc-900/50">
-                  <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto mb-1.5" />
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto mb-1.5" aria-hidden="true" />
                   <span className="font-medium text-zinc-800 dark:text-zinc-200">
                     All staff accounted for today!
                   </span>
                 </div>
               ) : (
-                <div className="divide-y divide-zinc-100 dark:divide-zinc-800 text-xs max-h-72 overflow-y-auto">
-                  {unmarkedStaff.map((emp) => (
-                    <div
-                      key={emp.id}
-                      className="py-2 flex items-center justify-between gap-2"
-                    >
-                      <div className="min-w-0">
-                        <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate block">
-                          {emp.fullName}
-                        </span>
-                        <span className="text-[11px] text-zinc-400">
-                          {emp.department}
-                        </span>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuickMarkPresent(emp.id)}
+                <>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleMarkAllPresent}
+                    icon={<CheckCircle2 className="w-3.5 h-3.5" />}
+                    aria-label="Mark all unmarked staff as present"
+                  >
+                    Mark All Present
+                  </Button>
+                  <div className="divide-y divide-zinc-100 dark:divide-zinc-800 text-xs max-h-72 overflow-y-auto">
+                    {unmarkedStaff.map((emp) => (
+                      <div
+                        key={emp.id}
+                        className="py-2.5 flex items-center justify-between gap-2"
                       >
-                        Present
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                        <div className="min-w-0">
+                          <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate block">
+                            {emp.fullName}
+                          </span>
+                          <span className="text-[11px] text-zinc-400">
+                            {emp.department}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleQuickMark(emp.id, 'present')}
+                            className="px-2 py-1 text-[11px] font-medium rounded border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/60 active:bg-emerald-200 dark:active:bg-emerald-900/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
+                            aria-label={`Mark ${emp.fullName} as present`}
+                          >
+                            P
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleQuickMark(emp.id, 'half_day')}
+                            className="px-2 py-1 text-[11px] font-medium rounded border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950/60 active:bg-amber-200 dark:active:bg-amber-900/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1"
+                            aria-label={`Mark ${emp.fullName} as half day`}
+                          >
+                            H
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleQuickMark(emp.id, 'absent')}
+                            className="px-2 py-1 text-[11px] font-medium rounded border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-950/60 active:bg-red-200 dark:active:bg-red-900/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
+                            aria-label={`Mark ${emp.fullName} as absent`}
+                          >
+                            A
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
@@ -454,6 +527,7 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
                   size="sm"
                   className="w-full"
                   onClick={() => navigate('/attendance')}
+                  aria-label="Go to attendance sheet to mark remaining staff"
                 >
                   Go to Attendance Sheet
                 </Button>
@@ -466,7 +540,7 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
         <div className="rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-zinc-400" />
+              <Clock className="w-4 h-4 text-zinc-400" aria-hidden="true" />
               <span>Recent Activity Feed</span>
             </h3>
             <span className="text-xs text-zinc-400 font-mono">Last 10 actions</span>
@@ -483,7 +557,7 @@ export const DashboardPage: React.FC<{ onOpenMobileNav: () => void }> = ({
                 return (
                   <div key={act.id} className="py-2.5 flex items-start justify-between gap-4">
                     <div className="flex items-start gap-2.5 min-w-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-accent-600 mt-2 shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent-600 mt-2 shrink-0" aria-hidden="true" />
                       <div className="min-w-0">
                         <p className="text-zinc-800 dark:text-zinc-200 font-medium">
                           {act.message}

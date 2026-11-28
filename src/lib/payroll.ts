@@ -12,7 +12,7 @@ import type {
   ISODate,
   Paisa,
 } from '../types';
-import { getMonthInterval, getDaysInMonthKey, isWeeklyOffDay, isDateBefore, isDateAfter } from './dates';
+import { getMonthInterval, getDaysInMonthKey, isWeeklyOffDay, isDateBefore, isDateAfter, todayISO } from './dates';
 
 export interface ComputePayrollRowInput {
   employee: Employee;
@@ -73,7 +73,7 @@ export function calculateAdvanceScheduledRecovery(
  * Pure function: compute a single employee's payroll row for a given month.
  */
 export function computePayrollRow(input: ComputePayrollRowInput): PayrollRow {
-  const { employee, month, attendance, advances, adjustment, settings } = input;
+  const { employee, month, attendance, advances, adjustment, settings, referenceDate } = input;
   const divisor = getPayrollDivisor(month, settings);
   const dailyRateFloat = calculateDailyRateFloat(employee.baseSalary, divisor);
   const dailyRatePaisa: Paisa = Math.round(dailyRateFloat);
@@ -81,6 +81,7 @@ export function computePayrollRow(input: ComputePayrollRowInput): PayrollRow {
   const { days } = getMonthInterval(month);
   const totalDaysInMonth = days.length;
   const weeklyOffDay = settings.weeklyOff ?? 6;
+  const refDate = referenceDate || todayISO();
 
   // Map of date -> attendance status
   const attMap = new Map<string, AttendanceRecord>();
@@ -139,8 +140,10 @@ export function computePayrollRow(input: ComputePayrollRowInput): PayrollRow {
       if (isOff) {
         weeklyOffDays++;
       } else {
-        // Working day with no record: treated as unmarked and deducted as absent
-        unmarkedDays++;
+        // Working day with no record: only count as unmarked if date <= referenceDate
+        if (date <= refDate) {
+          unmarkedDays++;
+        }
       }
     }
   }

@@ -12,13 +12,65 @@
   }
 
   body {
-    @apply bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
+    @apply bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-900 dark:text-zinc-100;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    /* Smooth global transitions */
+    transition: background-color 200ms ease, color 200ms ease;
   }
 
-  /* Right align and use tabular numbers for all money displays */
-  .tabular-nums {
+  /* Tabular numbers globally for financial data, dates, counts */
+  .tabular-nums,
+  [class*="font-mono"],
+  time,
+  [data-numeric="true"] {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Refined focus rings - crisp, not fuzzy */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-accent-600 ring-offset-2 ring-offset-white dark:ring-accent-400 dark:ring-offset-zinc-900;
+  }
+
+  /* Text selection color */
+  ::selection {
+    @apply bg-accent-100 text-accent-900 dark:bg-accent-900/40 dark:text-accent-50;
+  }
+
+  /* Smooth caret */
+  input,
+  textarea {
+    caret-color: theme('colors.accent.600');
+  }
+
+  :root.dark input,
+  :root.dark textarea {
+    caret-color: theme('colors.accent.400');
+  }
+}
+
+@layer utilities {
+  /* Tactile active state for interactive surfaces */
+  .active-scale {
+    @apply active:scale-[0.98] transition-transform duration-100;
+  }
+
+  /* Crisp layered borders for elevation */
+  .border-refined {
+    @apply border border-zinc-200/80 dark:border-zinc-800;
+  }
+
+  .border-refined-strong {
+    @apply border border-zinc-300 dark:border-zinc-700;
+  }
+
+  /* Micro-shadow for subtle elevation */
+  .shadow-refined {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  /* Smooth interactive transitions */
+  .transition-interactive {
+    @apply transition-all duration-200 ease-out;
   }
 }
 
