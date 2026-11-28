@@ -215,10 +215,51 @@ sudo certbot --nginx -d staff.yourdomain.com
 
 ---
 
+## Docker Deployment
+
+### Build and Run with Docker
+
+```bash
+# Build the Docker image
+docker build -t staff-portal .
+
+# Run the container on port 8080
+docker run -d -p 8080:80 --name staff-portal staff-portal
+
+# Access the application
+# Open http://localhost:8080 in your browser
+```
+
+### Docker Commands
+
+```bash
+# Stop the container
+docker stop staff-portal
+
+# Start the container
+docker start staff-portal
+
+# Remove the container
+docker rm staff-portal
+
+# View logs
+docker logs staff-portal
+
+# Remove the image
+docker rmi staff-portal
+```
+
+The Docker image uses a multi-stage build:
+1. **Build stage**: Uses Node.js to install dependencies and build the production bundle
+2. **Production stage**: Uses Nginx Alpine to serve the static files with optimized configuration
+
+---
+
 ## Architecture & Codebase Organization
 
 ```
 staff-portal/
+├─ Dockerfile                     # Multi-stage Docker build: Node.js build + Nginx production
 ├─ index.html                     # Entry HTML with early dark mode detection script
 ├─ package.json                   # Dependencies (React 18, lucide-react, date-fns, Tailwind, Vitest)
 ├─ tailwind.config.js             # Custom zinc palette, deep teal accent, tabular-nums
